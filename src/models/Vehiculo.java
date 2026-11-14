@@ -78,5 +78,16 @@ public abstract class Vehiculo {
             throw new IllegalStateException("El vehiculo no tiene una capacidad de carga valida.");
         }
         return pedido.getPesoKg() <= this.getCapacidadKg();
+    }
+
+    public String toStringSimple(){
+        return "Patente: "+ patente + ", Capacidad(KM): " + capacidadKg;
+    }
+
+    @Override
+    public String toString() {
+        return "[Vehiculo patente " + patente + "]\nCapacidad(Kg): " + capacidadKg + "\nVelocidad(Km/h):" + velocidadKmH
+                + "\nCosto por Km: " + costoPorKm;
     };
+    
 }

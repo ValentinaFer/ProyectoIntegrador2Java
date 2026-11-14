@@ -2,25 +2,16 @@ package models;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
-public class Repartidor implements Facturable, Rastreable{
+import exceptions.SinPedidosException;
+
+public class Repartidor implements Facturable, Rastreable {
 
     private String legajo;
     private String nombre;
     private Vehiculo vehiculo;
-    private List<Pedido> pedidosAsignados = new ArrayList<>(); //no assigning more pedidos without checking if the guy isn't already doing work lol(Rastreable: if the guy is available for more pedidos or not. not if array simply empty, must check Pedidos status)
-    private int pedidosAsigLength = 0;
-
-    public Repartidor(String legajo, String nombre, Vehiculo vehiculo, Pedido[] pedidosAsignados,
-            int pedidosAsigLength) {
-        this.legajo = legajo;
-        this.nombre = nombre;
-        this.vehiculo = vehiculo;
-        this.pedidosAsignados = pedidosAsignados;
-        this.pedidosAsigLength = pedidosAsigLength;
-    }
+    private List<Pedido> pedidosAsignados = new ArrayList<>();
 
     public Repartidor(String legajo, String nombre, Vehiculo vehiculo) {
         this.legajo = legajo;
@@ -31,23 +22,15 @@ public class Repartidor implements Facturable, Rastreable{
     public Repartidor() {
     }
 
-    public int getPedidosAsigLength() {
-        return pedidosAsigLength;
-    }
-
-    public void setPedidosAsigLength(int pedidosAsigLength) {
-        this.pedidosAsigLength = pedidosAsigLength;
-    }
-
     public String getLegajo() {
         return legajo;
     }
 
     public void setLegajo(String legajo) {
         ResultadoValidation status = Validation.getLegajoStatus(legajo);
-        if (status == ResultadoValidation.EMPTY){
+        if (status == ResultadoValidation.EMPTY) {
             throw new IllegalArgumentException("El legajo del repartidor no puede estar vacio.");
-        } else if (status == ResultadoValidation.TOO_LONG){
+        } else if (status == ResultadoValidation.TOO_LONG) {
             throw new IllegalArgumentException("El legajo del repartidor no puede superar los 100 caracteres.");
         }
         this.legajo = legajo;
@@ -59,9 +42,9 @@ public class Repartidor implements Facturable, Rastreable{
 
     public void setNombre(String nombre) {
         ResultadoValidation status = Validation.getNombreStatus(nombre);
-        if (status == ResultadoValidation.EMPTY){
+        if (status == ResultadoValidation.EMPTY) {
             throw new IllegalArgumentException("El nombre del repartidor no puede estar vacio.");
-        } else if (status == ResultadoValidation.TOO_LONG){
+        } else if (status == ResultadoValidation.TOO_LONG) {
             throw new IllegalArgumentException("El nombre del repartidor no puede exceder los 100 caracteres.");
         }
         this.nombre = nombre;
@@ -75,50 +58,86 @@ public class Repartidor implements Facturable, Rastreable{
         this.vehiculo = vehiculo;
     }
 
-    public Pedido[] getPedidosAsignados() {
+    public List<Pedido> getPedidosAsignados() {
         return pedidosAsignados;
     }
 
-    public void setPedidosAsignados(Pedido[] pedidosAsignados) {
-        this.pedidosAsignados = pedidosAsignados;
+    public String toStringSimple(){
+        return "Legajo: " + (this.getLegajo() != null? this.getLegajo():"Sin legajo") + ", Nombre: " + (this.getNombre() != null ? this.getNombre(): "Sin nombre");
     }
 
     @Override
-    public String toString() { //check later; make it prettier
-        return "Repartidor [legajo=" + legajo + ", nombre=" + nombre + ", vehiculo=" + vehiculo + ", pedidosAsignados="
-                + Arrays.toString(pedidosAsignados) + "]";
+    public String toString() { //make prettier(and right) later..
+        String string = "";
+        string = string + "[Repartidor legajo nro. "+(this.getLegajo()!= null?this.getLegajo():"Sin legajo")+"]\n";
+        string = string + "Nombre: "+ (this.getNombre() != null ? this.getNombre(): "Sin nombre")+"\n";
+        Vehiculo vehiculo = this.getVehiculo();
+        if (vehiculo != null){
+            string = string + vehiculo.toStringSimple();
+        } else {
+            string = string + "Sin vehiculo";
+        }
+        if (pedidosAsignados.size() > 0){
+            string = string + pedidosAsignados;
+        }
+        return string;
     }
 
     @Override
-    public BigDecimal CalcularImporte() {
-        return null;
-        //10% del importe de los pedidos entregados.
+    public BigDecimal CalcularImporte() throws SinPedidosException {
+        if (pedidosAsignados.isEmpty()){
+            throw new SinPedidosException("El repartidor no tiene pedidos");
+        }
+        BigDecimal totalImporte = BigDecimal.ZERO;
+        for (Pedido pedido : pedidosAsignados) {
+            if (pedido.getEstado() == EstadoPedido.ENTREGADO){
+                totalImporte = totalImporte.add(pedido.calcularCosto(this.getVehiculo()));
+            }
+        }
+        if (totalImporte.compareTo(BigDecimal.ZERO) <= 0){
+            throw new SinPedidosException("El repartidor no tiene pedidos Entregados aún.");
+        }
+        return totalImporte.multiply(new BigDecimal("0.1"));
     }
 
-    //Asumiendo que un Repartidor NO esta disponible si su lista de pedidos esta llena o si tiene alguno de sus pedidos en estado EN_CAMINO.
-    public boolean isAvailable(){
-        if (this.pedidosAsigLength >= pedidosAsignados.length){
-            return false;
-        } 
-        for (int i = 0; i < pedidosAsigLength; i++) {
-            if (pedidosAsignados[i].getEstado() == EstadoPedido.EN_CAMINO){
+    /**
+     * Returns copy of the pedidos with the estado received in parameters.
+     * 
+     * @param estado to be filtered by.
+     * 
+     * @return List of {@link Pedido} filtered by the estado.
+     */
+    public List<Pedido> getPedidos(EstadoPedido estado){
+        List<Pedido> copyPedidos = new ArrayList<>();
+        for (Pedido pedido : pedidosAsignados) {
+            if (pedido.getEstado() == estado){
+                copyPedidos.add(pedido);
+            }
+        }
+        return copyPedidos;
+    }
+
+    //Asumiendo que un Repartidor NO esta disponible si tiene alguno de sus pedidos en estado EN_CAMINO.
+    public boolean isAvailable() {
+        for (Pedido pedido : pedidosAsignados) {
+            if (pedido.getEstado() == EstadoPedido.EN_CAMINO) {
                 return false;
             }
         }
         return true;
     }
 
-    public boolean addPedido(Pedido pedido){
-        if (pedidosAsigLength >= pedidosAsignados.length){
-            return false;
+    public boolean addPedido(Pedido pedido) {
+        if (pedido == null){ //maybe check more stuff for validation here?
+            throw new IllegalArgumentException("Debe ingresar un pedido valido.");
         }
-        pedidosAsignados[pedidosAsigLength++] = pedido;
+        pedidosAsignados.add(pedido);
         return true;
     }
 
     @Override
     public String obtenerEstadoActual() {
-        return isAvailable() ? "Disponible":"No Disponible";
+        return isAvailable() ? "Disponible" : "No Disponible";
     }
 
 }

@@ -44,11 +44,15 @@ public class CityLink {
     }
 
     public void addNewClient(Cliente cliente){
-        if (cliente == null || Validation.getNombreStatus(cliente.getNombre()) != "valid" || Validation.getTelefonoStatus(cliente.getTelefono()) != "valid" || Validation.getZonaCiudadStatus(cliente.getZonaCiudad()) != "valid"){
-
+        if (cliente == null){
+            throw new IllegalArgumentException("Debe ingresar un Cliente valido");
         }
-        
         cliente.setCodigo(nextClienteId++);
+        clientes.put(cliente.getCodigo(), cliente);
+    }
+
+    public void deleteClient(int code){
+        clientes.remove(code);
     }
 
     //since each Repartidor is identified by their Legajo, I should probably also add a method to make sure I don't add a repartidor with a repeated Legajo into the array.
