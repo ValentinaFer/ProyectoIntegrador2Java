@@ -67,6 +67,16 @@ public final class Menu {
         return scanner.nextLine();
     }
 
+    public String getDeliveryPerMenuOption(){
+        System.out.println("===[GESTION REPARTIDOR]===");
+        System.out.println("[1]. Ingresar nuevo Repartidor;");
+        System.out.println("[2]. Modificar un Repartidor;");
+        System.out.println("[3]. Eliminar un repartidor;");
+        System.out.println("[4]. Ver todo los Repartidores;");
+        System.out.println("[6]. Volver al Menu principal.");
+        return scanner.nextLine();
+    }
+
     /**
      * Shows Client Creation menu with the fields possible to modify and returns
      * selected option.
@@ -179,4 +189,21 @@ public final class Menu {
         }
     }
 
+    /**
+     * Asks for code of client, returns it in String
+     * @return the {@link String} for the code introduced, or empty String if choosing to go back 
+     */
+    public String askCodeClient(){
+        System.out.println("Ingrese el codigo del cliente o deje vacio para volver al menu: ");
+        return scanner.nextLine();
+    }
+
+    public String askEstaSeguro(){
+        System.out.println("Esta seguro que desea continuar con esta accion?(s/n)");
+        return scanner.nextLine();
+    }
+
+    public String waitEnter(){
+        return scanner.nextLine();
+    }
 }

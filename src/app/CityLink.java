@@ -43,6 +43,16 @@ public class CityLink {
         return this.clientes;
     }
 
+    public void modifyClient(Cliente cliente){
+        if (!clientes.containsKey(cliente.getCodigo())){
+            throw new IllegalArgumentException("Cliente no encontrado!");
+        }
+        Cliente c = clientes.get(cliente.getCodigo());
+        c.setNombre(cliente.getNombre());
+        c.setTelefono(cliente.getTelefono());
+        c.setZonaCiudad(cliente.getZonaCiudad());
+    }
+
     public void addNewClient(Cliente cliente){
         if (cliente == null){
             throw new IllegalArgumentException("Debe ingresar un Cliente valido");
@@ -51,8 +61,24 @@ public class CityLink {
         clientes.put(cliente.getCodigo(), cliente);
     }
 
-    public void deleteClient(int code){
-        clientes.remove(code);
+    /**
+     * Returns the Client deleted from the list or null if nothing was deleted.
+     * @param code - the code of the client to remove.
+     * @return the {@link Cliente} removed or {@code null} if nothing was found to be removed
+     */
+    public Cliente deleteClient(int code){
+        return clientes.remove(code); //can also return null if the previous object mapping to that key was null, but should never happen because I only allow Clients that are not null to be added into the map.
+    }
+
+    /**
+     * returns a shallow copy of the client with the code received by parameter
+     * @param code - the code of the client to look for
+     * @return the {@link Client} found by the code or {@code null} if not found
+     */
+    public Cliente getCliente(int code){
+        Cliente c = clientes.get(code);
+        if (c == null) return null;
+        return new Cliente(c.getCodigo(), c.getNombre(), c.getTelefono(), c.getZonaCiudad());
     }
 
     //since each Repartidor is identified by their Legajo, I should probably also add a method to make sure I don't add a repartidor with a repeated Legajo into the array.

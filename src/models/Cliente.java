@@ -79,8 +79,8 @@ public class Cliente {
     }
 
     public String toDisplayString() {
-        return "==[Cliente nro." + (this.getCodigo()) + "]==\nNombre: " + (this.getNombre() + "\nTelefono: "
-                + (this.getTelefono()) + "\nZona Ciudad: " + (this.getZonaCiudad()));
+        return "==[Cliente nro." + (this.getCodigo()==0? "..." : this.getCodigo()) + "]==\nNombre: " + (this.getNombre()==null?"Sin nombre":this.getNombre()) + "\nTelefono: "
+                + (this.getTelefono()==null?"Sin Telefono":this.getTelefono()) + "\nZona Ciudad: " + (this.getZonaCiudad()==null?"Sin Zona Ciudad":this.getZonaCiudad());
     }
 
     @Override

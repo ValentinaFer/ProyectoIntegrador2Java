@@ -1,7 +1,9 @@
 package app;
 
 import java.math.BigDecimal;
+import java.util.Map;
 import java.util.Scanner;
+import java.util.TreeMap;
 
 import exceptions.AlmacenamientoLlenoException;
 import exceptions.CapacidadExcedidaException;
@@ -27,6 +29,7 @@ public class Main {
     private static final Scanner scanner = new Scanner(System.in);
     private static final CityLink gestor = new CityLink();
     private static final Menu menu = new Menu();
+
     public static void main(String[] args) {
         String option;
         try {
@@ -41,9 +44,12 @@ public class Main {
             gestor.addNewClient(c3);
             gestor.addNewClient(c4);
             gestor.addNewClient(c5);
-            gestor.addNewRepartidor(new Repartidor("11111111", "Robin", new Camioneta("BAT-123", 500, 30, new BigDecimal("300"))));
-            gestor.addNewRepartidor(new Repartidor("22222222", "Hobbie", new Camioneta("PUNK-123", 30, 40, new BigDecimal("120"))));
-            gestor.addNewRepartidor(new Repartidor("33333333", "Spider-man", new Camioneta("SPIDER-123", 10, 15, new BigDecimal("50"))));
+            gestor.addNewRepartidor(
+                    new Repartidor("11111111", "Robin", new Camioneta("BAT-123", 500, 30, new BigDecimal("300"))));
+            gestor.addNewRepartidor(
+                    new Repartidor("22222222", "Hobbie", new Camioneta("PUNK-123", 30, 40, new BigDecimal("120"))));
+            gestor.addNewRepartidor(new Repartidor("33333333", "Spider-man",
+                    new Camioneta("SPIDER-123", 10, 15, new BigDecimal("50"))));
             gestor.addNewPedido(new PedidoFragil(c1, "Destino algo Fragil", 50, 100));
             gestor.addNewPedido(new PedidoNormal(c2, "Destino algo normal", 20, 150));
             gestor.addNewPedido(new PedidoUrgente(c3, "Destino algo Urgente", 100, 100));
@@ -57,7 +63,6 @@ public class Main {
             System.out.println("No deberia ingresar aca LOL3");
         }
 
-
         while (true) {
             option = menu.getMainMenuOptions();
             switch (option) {
@@ -65,11 +70,7 @@ public class Main {
                     clientManagement();
                     break;
                 case "2":
-                    try {
-                        registrarRepartidor();
-                    } catch (AlmacenamientoLlenoException ex) {
-                        System.out.println("[Error]. " + ex.getMessage());
-                    }
+                    gestionarRepartidores();
                     break;
                 case "3":
                     try {
@@ -108,26 +109,45 @@ public class Main {
         }
     }
 
-    public static void clientManagement(){
+    public static void gestionarRepartidores(){
         String option;
-        while(true){
+        while (true) {
+            
+        }
+    }
+
+    public static void clientManagement() {
+        String option;
+        while (true) {
             option = menu.getClientMenuOption();
             switch (option) {
                 case "1":
-                    createNewClient();
+                    Cliente nuevoCliente = modifyClient(new Cliente());
+                    if (nuevoCliente != null) {
+                        gestor.addNewClient(nuevoCliente);
+                        System.out.println("[Cliente agregado con exito]");
+                    }
                     break;
                 case "2":
-                    
+                    Cliente clienteEditar = getClient();
+                    if (clienteEditar != null) {
+                        Cliente clienteModificado = modifyClient(clienteEditar);
+                        if (clienteModificado != null) {
+                            gestor.modifyClient(clienteModificado);
+                            System.out.println("[Cliente modificado con exito]");
+                        }
+                    }
                     break;
                 case "3":
-                    
+                    Cliente clienteEliminar = getClient();
+                    deleteClient(clienteEliminar);
                     break;
                 case "4":
-                    
+                    showClients();
                     break;
                 case "5":
-                    
-                    break;    
+                    System.out.println("Volviendo al menu principal.");
+                    return;
                 default:
                     System.out.println("[UY!] Debe ingresar una opcion valida del menu.");
                     break;
@@ -135,10 +155,96 @@ public class Main {
         }
     }
 
-    public static void createNewClient(){
-        Cliente cliente = new Cliente();
+    public static void showClients() {
+        TreeMap<Integer, Cliente> clientes = gestor.getClientes();
+        if (clientes.size() <= 0) {
+            System.out.println("No hay clientes que mostrar!");
+        } else {
+            System.out.println("==[CLIENTES]==");
+            for (Map.Entry<Integer, Cliente> entry : clientes.entrySet()) {
+                System.out.println("["+ (entry.getKey()) + "]. Nombre: " + entry.getValue().getNombre());
+            }
+        }
+        System.out.println("Presione Enter para volver..");
+        menu.waitEnter();
+    }
+
+    /**
+     * Shows the Client passed by parameters and asks user if sure before deleting
+     * it.
+     */
+    public static void deleteClient(Cliente cliente) {
         String option;
         while (true) {
+            System.out.println(cliente);
+            System.out.println("Eliminar Cliente");
+            option = menu.askEstaSeguro().toLowerCase();
+            switch (option) {
+                case "s":
+                    if (gestor.deleteClient(cliente.getCodigo()) != null) {
+                        System.out.println("[Cliente eliminado con exito]");
+                        return;
+                    } else {
+                        System.out.println("[No se encontro el cliente para eliminar]");
+                        return;
+                    }
+                case "n":
+                    System.out.println("Volviendo al menu principal.");
+                    return;
+                default:
+                    System.out.println("[UY!] Debe ingresar una opcion valida del menu.");
+                    break;
+            }
+        }
+    }
+
+    /**
+     * Asks for the code of a client, returns the found client or null if the user
+     * choosed
+     * to go back.
+     * 
+     * @return the searched {@link Cliente} or {@code null} if the user choosed to
+     *         go back to the main menu.
+     */
+    public static Cliente getClient() {
+        while (true) {
+            String code = menu.askCodeClient();
+            if (code.isBlank()) {
+                System.out.println("[Volviendo al menu principal]");
+                return null;
+            } else {
+                try {
+                    int codeNumber = Integer.parseInt(code);
+                    Cliente cliente = gestor.getCliente(codeNumber);
+                    if (cliente == null) {
+                        System.out.println("[UY!]. Cliente no encontrado.");
+                    } else {
+                        return cliente;
+                    }
+                } catch (NumberFormatException e) {
+                    System.out.println("[UY!]. Debe ingresar un numero!");
+                }
+            }
+        }
+    }
+
+    /**
+     * Allows user to modify a Client passed by parameter and returns it. If its a
+     * client with no code, it shows the menu as if creating a new Client, otherwise
+     * it will show as if modifying an existing Client.
+     * 
+     * @param cliente - the {@link Cliente} to modify.
+     * @return the {@link Cliente} modified or {@code null} if the modification was
+     *         cancelled
+     */
+    public static Cliente modifyClient(Cliente cliente) {
+        String option;
+        while (true) {
+            if (cliente.getCodigo() == 0) {
+                System.out.println("==[CREAR NUEVO CLIENTE]==");
+            } else {
+                System.out.println("==[MODIFICAR CLIENTE]==");
+            }
             System.out.println(cliente);
             option = menu.getClientFieldsOption();
             switch (option) {
@@ -152,38 +258,38 @@ public class Main {
                     cliente.setZonaCiudad(menu.askZonaCiudad());
                     break;
                 case "4":
-                    System.out.println("[Creacion de Cliente Cancelada]");
-                    return;
+                    System.out.println("[Modificacion de Cliente Cancelada]");
+                    return null;
                 case "5":
-                    if (cliente.getNombre() == null || cliente.getTelefono() == null || cliente.getZonaCiudad() == null){
-                        System.out.println("[UY!]. Debe ingresar toda la informacion solicitada del cliente antes de poder guardarlo en el sistema.");
+                    if (cliente.getNombre() == null || cliente.getTelefono() == null
+                            || cliente.getZonaCiudad() == null) {
+                        System.out.println(
+                                "[UY!]. Debe ingresar toda la informacion solicitada del cliente antes de poder guardarlo en el sistema.");
                         break;
                     } else {
-                        gestor.addNewClient(cliente);
-                        System.out.println("[Cliente agregado con exito]");
-                        return;
+                        return cliente;
                     }
                 default:
+                    System.out.println("[UY!] Debe ingresar una opcion valida del menu.");
                     break;
             }
         }
     }
 
+    // ================================================
 
-//================================================
-
-
-    public static Pedido askPedidoCambiable(){
+    public static Pedido askPedidoCambiable() {
         String option;
         Pedido[] pedidos = gestor.getPedidosCambiables();
-        if (pedidos.length <= 0){
+        if (pedidos.length <= 0) {
             System.out.println("[UY!]. No hay pedidos que puedan ser cambiados en este momento.");
             return null;
         }
         while (true) {
             for (int i = 0; i < pedidos.length; i++) {
-            Pedido pedido = pedidos[i];
-            System.out.println("["+i+"] Destino: "+ (pedido.getDestino()) + ", Estado: " + (pedido.getEstado().toString()));
+                Pedido pedido = pedidos[i];
+                System.out.println("[" + i + "] Destino: " + (pedido.getDestino()) + ", Estado: "
+                        + (pedido.getEstado().toString()));
             }
             System.out.println("Seleccione el pedido del que desea cambiar el estado: ");
             option = scanner.nextLine();
@@ -200,13 +306,13 @@ public class Main {
         }
     }
 
-    public static void cambiarEstadoPedido() throws EstadoInvalidoException{
+    public static void cambiarEstadoPedido() throws EstadoInvalidoException {
         Pedido pedido = askPedidoCambiable();
         String option;
-        if (pedido != null){
+        if (pedido != null) {
             switch (pedido.getEstado()) {
                 case PENDIENTE:
-                    while(true){
+                    while (true) {
                         System.out.println("[1]. Cambiar a EN CAMINO;");
                         System.out.println("[2]. Cambiar a CANCELADO.");
                         System.out.println("[3]. Volver..");
@@ -214,23 +320,23 @@ public class Main {
                         option = scanner.nextLine();
                         switch (option) {
                             case "1":
-                                if (gestor.cambiarEstadoPedido(pedido.getCodigo())){
-                                System.out.println("PEDIDO MODIFICADO CON EXITO");
+                                if (gestor.cambiarEstadoPedido(pedido.getCodigo())) {
+                                    System.out.println("PEDIDO MODIFICADO CON EXITO");
                                 } else {
                                     System.out.println("[!]. Pedido no encontrado");
                                 }
                                 return;
                             case "2":
-                                if (gestor.cancelarPedido(pedido.getCodigo())){
-                                System.out.println("PEDIDO CANCELADO CON EXITO");
+                                if (gestor.cancelarPedido(pedido.getCodigo())) {
+                                    System.out.println("PEDIDO CANCELADO CON EXITO");
                                 } else {
                                     System.out.println("[!]. Pedido no encontrado");
                                 }
                                 return;
                             case "3":
-                                //should do this in another fun, this is clearly too messy!
+                                // should do this in another fun, this is clearly too messy!
                                 System.out.println("Volviendo al menu");
-                                return; 
+                                return;
                             default:
                                 System.out.println("[UY!]. Debe ingresar una de las opciones del menu.");
                                 break;
@@ -243,23 +349,24 @@ public class Main {
                     option = scanner.nextLine();
                     switch (option) {
                         case "1":
-                            if (gestor.cambiarEstadoPedido(pedido.getCodigo())){
-                            System.out.println("PEDIDO MODIFICADO CON EXITO");
+                            if (gestor.cambiarEstadoPedido(pedido.getCodigo())) {
+                                System.out.println("PEDIDO MODIFICADO CON EXITO");
                             } else {
                                 System.out.println("[!]. Pedido no encontrado");
                             }
                             return;
                         case "2":
                             System.out.println("Volviendo al menu");
-                            return; 
+                            return;
                         default:
                             System.out.println("[UY!]. Debe ingresar una de las opciones del menu.");
                             break;
-                        }
+                    }
                     break;
                 case ENTREGADO:
                 case CANCELADO:
-                    throw new EstadoInvalidoException("No puede cambiar el estado de los Pedido ya ENTREGADOS o CANCELADOS");
+                    throw new EstadoInvalidoException(
+                            "No puede cambiar el estado de los Pedido ya ENTREGADOS o CANCELADOS");
                 default:
                     break;
             }
@@ -312,7 +419,7 @@ public class Main {
 
     public static void showPedidos() {
         Pedido[] pedidos = gestor.getPedidos();
-        if (pedidos.length <= 0){
+        if (pedidos.length <= 0) {
             System.out.println("[UY!]. No hay pedidos");
         }
         for (int i = 0; i < pedidos.length; i++) {
@@ -351,7 +458,7 @@ public class Main {
                     System.out.println("ASIGNACION DE PEDIDO CANCELADA");
                     return;
                 case "4":
-                    if (repartidor == null || pedido == null){
+                    if (repartidor == null || pedido == null) {
                         System.out.println("[UY!]. Debe rellenar todo los campos.");
                         break;
                     }
@@ -792,56 +899,4 @@ public class Main {
         }
     }
 
-    public static void registrarCliente() throws AlmacenamientoLlenoException {
-        Cliente cliente = new Cliente();
-        String option;
-        while (true) {
-            System.out.println("---[MENU CLIENTE NUEVO]---");
-            System.out.println("[1]. Nombre:" + (cliente.getNombre() == null ? "Sin nombre" : cliente.getNombre()));
-            System.out.println(
-                    "[2]. Telefono:" + (cliente.getTelefono() == null ? "Sin telefono" : cliente.getTelefono()));
-            System.out.println("[3]. Zona Ciudad:"
-                    + (cliente.getZonaCiudad() == null ? "Sin Zona Ciudad" : cliente.getZonaCiudad()));
-            System.out.println("[4]. CANCELAR;");
-            System.out.println("[5]. GUARDAR.");
-            System.out.println("Ingrese el campo a modificar:");
-            option = scanner.nextLine();
-            switch (option) {
-                case "1":
-                    cliente.setNombre(askNombre());
-                    break;
-                case "2":
-                    cliente.setTelefono(askTelefono());
-                    break;
-                case "3":
-                    cliente.setZonaCiudad(askZonaCiudad());
-                    break;
-                case "4":
-                    System.out.println("CLIENTE CANCELADO");
-                    return;
-                case "5":
-                    if (Validation.getNombreStatus(cliente.getNombre()) != "valid"
-                            || Validation.getTelefonoStatus(cliente.getTelefono()) != "valid"
-                            || Validation.getZonaCiudadStatus(cliente.getZonaCiudad()) != "valid") {
-                        System.out.println("[UY!]. Debe rellenar todo los campos antes de guardar!");
-                    } else {
-                        gestor.addNewClient(cliente);
-                        System.out.println("NUEVO CLIENTE AGREGADO CON EXITO!");
-                        return;
-                    }
-                    break;
-                default:
-                    System.out.println("[UY!] Debe ingresar una opcion valida del menu.");
-                    break;
-            }
-        }
-    }
-
-    
-
-    
-
-    
-
-    
 }
