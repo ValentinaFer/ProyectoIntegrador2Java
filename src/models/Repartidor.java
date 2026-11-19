@@ -12,6 +12,11 @@ public class Repartidor implements Facturable, Rastreable {
     private String nombre;
     private Vehiculo vehiculo;
     private List<Pedido> pedidosAsignados = new ArrayList<>();
+    private List<Pedido> pedidosEntregados = new ArrayList<>();
+
+    public List<Pedido> getPedidosEntregados() {
+        return pedidosEntregados;
+    }
 
     public Repartidor(String legajo, String nombre, Vehiculo vehiculo) {
         this.legajo = legajo;
@@ -69,16 +74,13 @@ public class Repartidor implements Facturable, Rastreable {
     @Override
     public String toString() { //make prettier(and right) later..
         String string = "";
-        string = string + "[Repartidor legajo nro. "+(this.getLegajo()!= null?this.getLegajo():"Sin legajo")+"]\n";
+        string = string + "[Repartidor legajo nro. "+(this.getLegajo()!= null?this.getLegajo():"...")+"]\n";
         string = string + "Nombre: "+ (this.getNombre() != null ? this.getNombre(): "Sin nombre")+"\n";
         Vehiculo vehiculo = this.getVehiculo();
         if (vehiculo != null){
             string = string + vehiculo.toStringSimple();
         } else {
             string = string + "Sin vehiculo";
-        }
-        if (pedidosAsignados.size() > 0){
-            string = string + pedidosAsignados;
         }
         return string;
     }
@@ -117,7 +119,7 @@ public class Repartidor implements Facturable, Rastreable {
         return copyPedidos;
     }
 
-    //Asumiendo que un Repartidor NO esta disponible si tiene alguno de sus pedidos en estado EN_CAMINO.
+    //Asumiendo que un Repartidor NO esta disponible si tiene al menos uno de sus pedidos en estado EN_CAMINO.
     public boolean isAvailable() {
         for (Pedido pedido : pedidosAsignados) {
             if (pedido.getEstado() == EstadoPedido.EN_CAMINO) {
@@ -132,6 +134,31 @@ public class Repartidor implements Facturable, Rastreable {
             throw new IllegalArgumentException("Debe ingresar un pedido valido.");
         }
         pedidosAsignados.add(pedido);
+        return true;
+    }
+
+    @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + ((legajo == null) ? 0 : legajo.hashCode());
+        return result;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (obj == null)
+            return false;
+        if (getClass() != obj.getClass())
+            return false;
+        Repartidor other = (Repartidor) obj;
+        if (legajo == null) {
+            if (other.legajo != null)
+                return false;
+        } else if (!legajo.equals(other.legajo))
+            return false;
         return true;
     }
 

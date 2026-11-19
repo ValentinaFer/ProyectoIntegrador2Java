@@ -23,6 +23,34 @@ public abstract class Pedido implements Rastreable{
         setEstado(estado);
     }
 
+    @Override
+    public String toString() {
+        return "[Pedido cod. " + (codigo != 0? codigo: "...") + "\nCliente: " + (cliente != null ? cliente.getNombre(): "Sin Cliente") + "\nDestino: " + (destino != null?destino:"Sin destino.") + "\nPeso: " + pesoKg
+                + "KG\nDistancia: " + distanciaKm + "KM\nFechaHoraIngreso:" + (fechaHoraIngreso!=null?fechaHoraIngreso: "Sin fecha/hora") + "\nEstado: " + estado;
+    }
+
+    @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + codigo;
+        return result;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (obj == null)
+            return false;
+        if (getClass() != obj.getClass())
+            return false;
+        Pedido other = (Pedido) obj;
+        if (codigo != other.codigo)
+            return false;
+        return true;
+    }
+
     protected Pedido(Cliente cliente, String destino, double pesoKg, double distanciaKm) throws PedidoInvalidoException{
         setCliente(cliente);
         setDestino(destino);

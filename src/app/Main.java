@@ -1,23 +1,25 @@
 package app;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 import java.util.TreeMap;
 
-import exceptions.AlmacenamientoLlenoException;
-import exceptions.CapacidadExcedidaException;
-import exceptions.EstadoInvalidoException;
 import exceptions.PedidoInvalidoException;
 import models.Bicicleta;
 import models.Camioneta;
 import models.Cliente;
 import models.Moto;
+import models.Operacion;
 import models.Pedido;
 import models.PedidoFragil;
 import models.PedidoNormal;
 import models.PedidoUrgente;
 import models.Repartidor;
+import models.ResultadoAtencion;
 import models.ResultadoValidation;
 import models.Validation;
 import models.Vehiculo;
@@ -32,72 +34,55 @@ public class Main {
 
     public static void main(String[] args) {
         String option;
+        Cliente c1 = new Cliente("Valentina", "111222333", "Centro");
+        gestor.addNewClient(c1);
+        gestor.addNewClient(new Cliente("Miguel", "222333444", "Sur"));
+        gestor.addNewRepartidor(new Repartidor("123", "Peter", new Moto("123asd", 50, 50, new BigDecimal("100"))));
+        gestor.addNewRepartidor(
+                new Repartidor("001", "Peter", new Camioneta("654mnb", 100, 100, new BigDecimal("200"))));
         try {
-            Cliente c1, c2, c3, c4, c5;
-            c1 = new Cliente("Valentina", "123123", "Barrio Alguno");
-            c2 = new Cliente("John", "1231232", "Barrio EnAlgunaParte");
-            c3 = new Cliente("Peter", "13654644", "Barrio Marvel");
-            c4 = new Cliente("Miguel", "9999999", "Barrio Marvel-2099");
-            c5 = new Cliente("Batman", "67676767", "Barrio DC");
-            gestor.addNewClient(c1);
-            gestor.addNewClient(c2);
-            gestor.addNewClient(c3);
-            gestor.addNewClient(c4);
-            gestor.addNewClient(c5);
-            gestor.addNewRepartidor(
-                    new Repartidor("11111111", "Robin", new Camioneta("BAT-123", 500, 30, new BigDecimal("300"))));
-            gestor.addNewRepartidor(
-                    new Repartidor("22222222", "Hobbie", new Camioneta("PUNK-123", 30, 40, new BigDecimal("120"))));
-            gestor.addNewRepartidor(new Repartidor("33333333", "Spider-man",
-                    new Camioneta("SPIDER-123", 10, 15, new BigDecimal("50"))));
-            gestor.addNewPedido(new PedidoFragil(c1, "Destino algo Fragil", 50, 100));
-            gestor.addNewPedido(new PedidoNormal(c2, "Destino algo normal", 20, 150));
-            gestor.addNewPedido(new PedidoUrgente(c3, "Destino algo Urgente", 100, 100));
-            gestor.addNewPedido(new PedidoFragil(c4, "DestinoFrag2", 5.5, 100));
-            gestor.asignarPedido(1, "11111111");
-        } catch (AlmacenamientoLlenoException e) {
-            System.out.println("No deberia ingresar aca LOL");
+            gestor.addNewPedido(new PedidoUrgente(c1, "Sur", 100, 100));
+            gestor.addNewPedido(new PedidoNormal(c1, "Este", 60, 50));
+            gestor.addNewPedido(new PedidoUrgente(c1, "Norte", 100, 100));
+            gestor.addNewPedido(new PedidoFragil(c1, "Oeste", 10, 500));
         } catch (PedidoInvalidoException e) {
-            System.out.println("No deberia ingresar aca LOL2");
-        } catch (CapacidadExcedidaException e) {
-            System.out.println("No deberia ingresar aca LOL3");
+            e.printStackTrace();
         }
-
         while (true) {
             option = menu.getMainMenuOptions();
             switch (option) {
-                case "1":
+                case "1": // gestion cliente
                     clientManagement();
                     break;
-                case "2":
+                case "2": // gestion Repartidor
                     gestionarRepartidores();
                     break;
-                case "3":
-                    try {
-                        registrarPedido();
-                    } catch (AlmacenamientoLlenoException ex) {
-                        System.out.println("[Error]. " + ex.getMessage());
+                case "3": // registrar Pedido
+                    registrarPedido();
+                    break;
+                case "4": // atender pedido
+                    atenderPedido();
+                    break;
+                case "5": // Registrar Entrega
+                    registrarEntrega();
+                    break;
+                case "6": // deshacer ultima operacion
+                    deshacerOperacion();
+                    break;
+                case "7": // Ordenar y Listar Pedidos (Eleccion de criterio(costo || distancia || fecha))
+                    List<Pedido> pedidos = ordenarYListar();
+                    for (Pedido pedido : pedidos) {
+                        System.out.println(pedido);
                     }
                     break;
-                case "4":
-                    asignarPedido();
-                    break;
-                case "5":
-                    try {
-                        cambiarEstadoPedido();
-                    } catch (EstadoInvalidoException e) {
-                        System.out.println("[ERROR]. " + e.getMessage());
+                case "8": // buscar pedido por codigo
+                    Pedido pedido = buscarPedido();
+                    if (pedido != null){
+                        System.out.println(pedido);
                     }
                     break;
-                case "6":
-                    buscarCliente();
-                    break;
-                case "7":
-                    showPedidos();
-                    break;
-                case "8":
-                    break;
-                case "9":
+                case "9": // intercalar
+                    intercalateLists();
                     break;
                 case "10":
                     System.out.println("BYE-BYE!");
@@ -109,10 +94,358 @@ public class Main {
         }
     }
 
-    public static void gestionarRepartidores(){
+    public static void intercalateLists(){ //and show
+        List<Pedido> pedidosNormales = new ArrayList<>();
+        pedidosNormales.addAll(gestor.getPedidosNormales());
+        gestor.mergeSort(pedidosNormales, 0, pedidosNormales.size()-1);
+        
+        System.out.println("[PEDIDOS Normal/Fragil]");
+        for (Pedido pedido : pedidosNormales) {
+            System.out.println("[Pedido nro. "+(pedido.getCodigo())+"] pedido Normal/Fragil.");
+        }
+
+        List<Pedido> pedidosUrgentes = new ArrayList<>();
+        pedidosUrgentes.addAll(gestor.getPedidosUrgentes());
+        gestor.mergeSort(pedidosUrgentes, 0, pedidosUrgentes.size()-1);
+        
+        System.out.println("[PEDIDOS URGENTES]");
+        for (Pedido pedido : pedidosUrgentes) {
+            System.out.println("[Pedido nro. "+(pedido.getCodigo())+"] pedido urgente.");
+        }
+
+        List<Pedido> intercalados = gestor.intercalar(pedidosNormales, pedidosUrgentes);
+
+        System.out.println("[PEDIDOS INTERCALADOS]");
+        for (Pedido pedido : intercalados) {
+            System.out.println("[Pedido nro. "+(pedido.getCodigo())+"] " + (pedido instanceof PedidoUrgente? "Pedido Urgente": "Pedido Normal/Fragil"));
+        }
+    }
+
+    public static Pedido buscarPedido() {
         String option;
         while (true) {
-            
+            option = menu.askCode();
+            if (option.isBlank()) {
+                return null;
+            }
+            try {
+                int code = Integer.parseInt(option);
+                Pedido pedido = gestor.getPedidoBinaria(code);
+                if (pedido == null) {
+                    System.out.println("Pedido no encontrado");
+                } else {
+                    return pedido;
+                }
+
+            } catch (NumberFormatException e) {
+                System.out.println("Debe ingresar un valor valido para el codigo.");
+            }
+        }
+    }
+
+    public static List<Pedido> ordenarYListar() {
+        String option;
+        List<Pedido> pedidos = gestor.getPedidosList();
+        while (true) {
+            option = menu.askCriteria();
+            switch (option) {
+                case "1": // codigo
+                    gestor.insertionSort(pedidos, Comparator.comparing(Pedido::getCodigo));
+                    return pedidos;
+                case "2": // costo
+                    System.out.println("[En mantenimiento!]");
+                    // me olvide que necesitaba el repartidor para calcular el costo :')
+                    break;
+                case "3": // distancia
+                    gestor.insertionSort(pedidos, Comparator.comparing(Pedido::getDistanciaKm));
+                    return pedidos;
+                case "4": // fecha
+                    gestor.insertionSort(pedidos, Comparator.comparing(Pedido::getfechaHoraIngreso));
+                    return pedidos;
+                case "5":
+                    return null;
+                default:
+                    break;
+            }
+        }
+    }
+
+    public static void deshacerOperacion() {
+        String option;
+        while (true) {
+            System.out.println("===[Ultima operacion]===");
+            Operacion operacion = gestor.getLastOperacion();
+            if (operacion == null) {
+                System.out.println("No hay operacion que deshacer..");
+                return;
+            }
+            System.out.println(operacion);
+            System.out.println("Deshacer operacion:");
+            option = menu.askEstaSeguro().toLowerCase();
+            switch (option) {
+                case "s":
+                    if (gestor.undoLastOperacion()) {
+                        System.out.println("Ultima operacion deshecha.");
+                    } else {
+                        System.out.println("[Error]. Sucedio un error inesperado.");
+                    }
+                    return;
+                case "n":
+                    return;
+                default:
+                    break;
+            }
+        }
+    }
+
+    public static void registrarEntrega() {
+        Repartidor repartidor;
+        while (true) {
+            repartidor = getRepartidor();
+            if (repartidor == null) {
+                return;
+            }
+            if (repartidor.getPedidosAsignados().isEmpty()) {
+                System.out.println("[UY]. El Repartidor no tiene Pedidos asignados!");
+            } else {
+                Pedido pedido = choosePedido(repartidor.getPedidosAsignados());
+                if (pedido == null) {
+                    return;
+                } else {
+                    if (gestor.registrarEntrega(repartidor.getLegajo(), pedido.getCodigo())) {
+                        System.out.println("Entrega registrada con exito");
+                        return;
+                    } else {
+                        System.out.println("[Error]. Sucedio un error inesperado. La entrega no pudo ser registrada");
+                    }
+                }
+            }
+        }
+
+    }
+
+    public static Pedido choosePedido(List<Pedido> pedidos) {
+        String option;
+        while (true) {
+            for (int i = 0; i < pedidos.size(); i++) {
+                Pedido pedido = pedidos.get(i);
+                System.out.println("[" + i + "]. Destino: " + pedido.getDestino() + ", Peso: "
+                        + pedido.getPesoKg());
+            }
+            option = menu.askCode();
+            if (option == null) { // volver al menu
+                return null;
+            } else {
+                try {
+                    int code = Integer.parseInt(option);
+                    Pedido pedido = null;
+                    if (code >= 0 && code < pedidos.size()) {
+                        pedido = pedidos.get(code);
+                    }
+                    if (pedido == null) {
+                        System.out.println("[UY!]. Debe seleccionar una opcion de la lista.");
+                    } else {
+                        return pedido;
+                    }
+                } catch (NumberFormatException e) {
+                    System.out.println("[UY!]. Debe ingresar un numero.");
+                }
+            }
+        }
+
+    }
+
+    public static void gestionarRepartidores() {
+        String option;
+        Repartidor repartidor;
+        while (true) {
+            option = menu.getDeliveryPersMenuOption();
+            switch (option) {
+                case "1": // agregar
+                    repartidor = createRepartidor(new Repartidor());
+                    if (gestor.addNewRepartidor(repartidor)) {
+                        System.out.println("[Repartidor agregado con exito]");
+                    } else {
+                        System.out.println(
+                                "[Error]. Sucedio un error inesperado. El repartidor no fue agregado a la lista");
+                    }
+                    break;
+                case "2": // eliminar
+                    repartidor = getRepartidor();
+                    if (repartidor != null) {
+                        deleteRepartidor(repartidor);
+                    }
+                    break;
+                case "3": // buscar por legajo
+                    repartidor = getRepartidor();
+                    if (repartidor != null) {
+                        System.out.println(repartidor);
+                        menu.waitEnter();
+                    }
+                    break;
+                case "4": // ver todos
+                    showRepartidores();
+                    break;
+                case "5":
+                    return;
+                default:
+                    System.out.println("[UY!] Debe ingresar una opcion valida del menu.");
+                    break;
+            }
+        }
+    }
+
+    public static void showRepartidores() {
+        List<Repartidor> repartidores = gestor.getRepartidores();
+        if (repartidores.size() <= 0) {
+            System.out.println("No hay Repartidores que mostrar!");
+        } else {
+            System.out.println("==[REPARTIDORES]==");
+            for (Repartidor repartidor : repartidores) {
+                System.out.println("[" + (repartidor.getLegajo()) + "]. Nombre: " + repartidor.getNombre());
+            }
+        }
+        System.out.println("Presione Enter para volver..");
+        menu.waitEnter();
+    }
+
+    public static void deleteRepartidor(Repartidor repartidor) {
+        String option;
+        while (true) {
+            System.out.println(repartidor);
+            if (!gestor.canDeleteRepartidor(repartidor.getLegajo())) {
+                System.out.println(
+                        "[UY!]. Este repartidor tiene Pedidos pendientes o en Camino, y no puede ser eliminado hasta que sean cancelados o entregados respectivamente.");
+                menu.waitEnter();
+            } else {
+                System.out.println("Eliminar Repartidor");
+                option = menu.askEstaSeguro().toLowerCase();
+                switch (option) {
+                    case "s":
+                        if (gestor.deleteRepartidor(repartidor.getLegajo())) {
+                            System.out.println("[Repartidor eliminado con exito]");
+                        } else {
+                            System.out.println("[No se pudo eliminar el repartidor]");
+                        }
+                        return;
+                    case "n":
+                        System.out.println("Volviendo al menu principal.");
+                        return;
+                    default:
+                        System.out.println("[UY!] Debe ingresar una opcion valida del menu.");
+                        break;
+                }
+            }
+
+        }
+    }
+
+    public static Repartidor getRepartidor() {
+        while (true) {
+            String legajo = menu.askLegajoRepartidor();
+            if (legajo.isBlank()) {
+                System.out.println("[<-]. Volviendo..");
+                return null;
+            } else {
+                Repartidor repartidor = gestor.getRepartidor(legajo);
+                if (repartidor == null) {
+                    System.out.println("[UY!]. Repartidor no encontrado.");
+                } else {
+                    return repartidor;
+                }
+            }
+        }
+    }
+
+    public static Repartidor createRepartidor(Repartidor repartidor) {
+        String option;
+        while (true) {
+            System.out.println(repartidor);
+            option = menu.getDeliveryPersFields();
+            switch (option) {
+                case "1":
+                    repartidor.setLegajo(menu.askLegajo());
+                    break;
+                case "2":
+                    repartidor.setNombre(menu.askValidNombre());
+                    break;
+                case "3":
+                    repartidor.setVehiculo(registrarVehiculo());
+                    break;
+                case "4":
+                    System.out.println("Creacion de Repartidor Cancelada.");
+                    return null;
+                case "5":
+                    if (Validation.getNombreStatus(repartidor.getNombre()) != ResultadoValidation.VALID
+                            || Validation.getLegajoStatus(repartidor.getLegajo()) != ResultadoValidation.VALID
+                            || repartidor.getVehiculo() == null) {
+                        System.out.println(
+                                "[UY!]. Debe rellenar todo los campos antes de poder agregar el nuevo Repartidor al sistema.");
+                        break;
+                    } else {
+                        if (gestor.isRepartidorInList(repartidor)) {
+                            System.out.println("[UY!]. El legajo ingresado ya existe en la lista de repartidores.");
+                            break;
+                        }
+                        return repartidor;
+                    }
+                default:
+                    System.out.println("[UY!] Debe ingresar una opcion valida del menu.");
+                    break;
+            }
+        }
+    }
+
+    public static Vehiculo registrarVehiculo() {
+        String patente = "", option;
+        TipoVehiculo tipo = TipoVehiculo.CAMIONETA;
+        double capacidad = 0, velocidad = 0;
+        BigDecimal costoPorKm = BigDecimal.ZERO;
+        while (true) {
+            System.out.println("Tipo de Vehiculo:" + (tipo) + "\nPatente: " + (patente != "" ? patente : "sin Patente")
+                    + "\nCapacidad: " + capacidad + " KG.\nVelocidad: " + velocidad + "KM/H.\nCosto: " + costoPorKm
+                    + "$/KM.");
+            option = menu.getVehicleFieldOption();
+            switch (option) {
+                case "1":
+                    tipo = menu.askTipoVehiculo();
+                    break;
+                case "2":
+                    patente = menu.askPatente();
+                    break;
+                case "3":
+                    capacidad = menu.askCapacidad();
+                    break;
+                case "4":
+                    velocidad = menu.askVelocidad();
+                    break;
+                case "5":
+                    costoPorKm = menu.askCostoPorKm();
+                    break;
+                case "6":
+                    System.out.println("CREACION DE VEHICULO CANCELADA");
+                    return null;
+                case "7":
+                    if (Validation.getPatenteStatus(patente) != ResultadoValidation.VALID || capacidad <= 0
+                            || velocidad <= 0
+                            || costoPorKm.compareTo(BigDecimal.ZERO) <= 0) {
+                        System.out.println("[UY!]. Debe rellenar todo los campos antes de guardar!");
+                    } else {
+                        switch (tipo) {
+                            case CAMIONETA:
+                                return new Camioneta(patente, capacidad, velocidad, costoPorKm);
+                            case MOTO:
+                                return new Moto(patente, capacidad, velocidad, costoPorKm);
+                            case BICICLETA:
+                                return new Bicicleta(patente, capacidad, velocidad, costoPorKm);
+                        }
+                    }
+                    break;
+                default:
+                    System.out.println("[UY!] Debe ingresar una opcion valida del menu.");
+                    break;
+            }
+
         }
     }
 
@@ -121,14 +454,14 @@ public class Main {
         while (true) {
             option = menu.getClientMenuOption();
             switch (option) {
-                case "1":
+                case "1": // agregar
                     Cliente nuevoCliente = modifyClient(new Cliente());
                     if (nuevoCliente != null) {
                         gestor.addNewClient(nuevoCliente);
                         System.out.println("[Cliente agregado con exito]");
                     }
                     break;
-                case "2":
+                case "2": // modificar
                     Cliente clienteEditar = getClient();
                     if (clienteEditar != null) {
                         Cliente clienteModificado = modifyClient(clienteEditar);
@@ -138,11 +471,11 @@ public class Main {
                         }
                     }
                     break;
-                case "3":
+                case "3": // eliminar
                     Cliente clienteEliminar = getClient();
                     deleteClient(clienteEliminar);
                     break;
-                case "4":
+                case "4": // ver todos
                     showClients();
                     break;
                 case "5":
@@ -162,7 +495,7 @@ public class Main {
         } else {
             System.out.println("==[CLIENTES]==");
             for (Map.Entry<Integer, Cliente> entry : clientes.entrySet()) {
-                System.out.println("["+ (entry.getKey()) + "]. Nombre: " + entry.getValue().getNombre());
+                System.out.println("[" + (entry.getKey()) + "]. Nombre: " + entry.getValue().getNombre());
             }
         }
         System.out.println("Presione Enter para volver..");
@@ -208,7 +541,7 @@ public class Main {
      */
     public static Cliente getClient() {
         while (true) {
-            String code = menu.askCodeClient();
+            String code = menu.askCode();
             if (code.isBlank()) {
                 System.out.println("[Volviendo al menu principal]");
                 return null;
@@ -245,7 +578,7 @@ public class Main {
             } else {
                 System.out.println("==[MODIFICAR CLIENTE]==");
             }
-            System.out.println(cliente);
+            System.out.println(cliente.toDisplayString());
             option = menu.getClientFieldsOption();
             switch (option) {
                 case "1":
@@ -276,264 +609,7 @@ public class Main {
         }
     }
 
-    // ================================================
-
-    public static Pedido askPedidoCambiable() {
-        String option;
-        Pedido[] pedidos = gestor.getPedidosCambiables();
-        if (pedidos.length <= 0) {
-            System.out.println("[UY!]. No hay pedidos que puedan ser cambiados en este momento.");
-            return null;
-        }
-        while (true) {
-            for (int i = 0; i < pedidos.length; i++) {
-                Pedido pedido = pedidos[i];
-                System.out.println("[" + i + "] Destino: " + (pedido.getDestino()) + ", Estado: "
-                        + (pedido.getEstado().toString()));
-            }
-            System.out.println("Seleccione el pedido del que desea cambiar el estado: ");
-            option = scanner.nextLine();
-            try {
-                int i = Integer.parseInt(option);
-                if (i >= pedidos.length || i < 0) {
-                    System.out.println("[UY!]. Debe seleccionar el numero del cliente de la lista.");
-                } else {
-                    return pedidos[i];
-                }
-            } catch (NumberFormatException e) {
-                System.out.println("[UY!]. Debe ingresar un valor numerico de la lista.");
-            }
-        }
-    }
-
-    public static void cambiarEstadoPedido() throws EstadoInvalidoException {
-        Pedido pedido = askPedidoCambiable();
-        String option;
-        if (pedido != null) {
-            switch (pedido.getEstado()) {
-                case PENDIENTE:
-                    while (true) {
-                        System.out.println("[1]. Cambiar a EN CAMINO;");
-                        System.out.println("[2]. Cambiar a CANCELADO.");
-                        System.out.println("[3]. Volver..");
-                        System.out.println("Ingrese el cambio que desea hacer:");
-                        option = scanner.nextLine();
-                        switch (option) {
-                            case "1":
-                                if (gestor.cambiarEstadoPedido(pedido.getCodigo())) {
-                                    System.out.println("PEDIDO MODIFICADO CON EXITO");
-                                } else {
-                                    System.out.println("[!]. Pedido no encontrado");
-                                }
-                                return;
-                            case "2":
-                                if (gestor.cancelarPedido(pedido.getCodigo())) {
-                                    System.out.println("PEDIDO CANCELADO CON EXITO");
-                                } else {
-                                    System.out.println("[!]. Pedido no encontrado");
-                                }
-                                return;
-                            case "3":
-                                // should do this in another fun, this is clearly too messy!
-                                System.out.println("Volviendo al menu");
-                                return;
-                            default:
-                                System.out.println("[UY!]. Debe ingresar una de las opciones del menu.");
-                                break;
-                        }
-                    }
-                case EN_CAMINO:
-                    System.out.println("[1]. Cambiar a ENTREGADO");
-                    System.out.println("[2]. Volver al menu...");
-                    System.out.println("Ingrese una opcion:");
-                    option = scanner.nextLine();
-                    switch (option) {
-                        case "1":
-                            if (gestor.cambiarEstadoPedido(pedido.getCodigo())) {
-                                System.out.println("PEDIDO MODIFICADO CON EXITO");
-                            } else {
-                                System.out.println("[!]. Pedido no encontrado");
-                            }
-                            return;
-                        case "2":
-                            System.out.println("Volviendo al menu");
-                            return;
-                        default:
-                            System.out.println("[UY!]. Debe ingresar una de las opciones del menu.");
-                            break;
-                    }
-                    break;
-                case ENTREGADO:
-                case CANCELADO:
-                    throw new EstadoInvalidoException(
-                            "No puede cambiar el estado de los Pedido ya ENTREGADOS o CANCELADOS");
-                default:
-                    break;
-            }
-        }
-    }
-
-    /*
-     * public static boolean askSearchByCode(){
-     * String option;
-     * while (true) {
-     * System.out.println("Buscar cliente por: ");
-     * System.out.println("[1]. Por Codigo;");
-     * System.out.println("[2]. Por Nombre;");
-     * System.out.println("Ingrese el metodo de busqueda que desea usar:");
-     * option = scanner.nextLine();
-     * switch (option) {
-     * case "1":
-     * return true;
-     * case "2":
-     * return false;
-     * default:
-     * System.out.println("[UY!] Debe ingresar una opcion valida del menu.");
-     * break;
-     * }
-     * }
-     * }
-     */
-
-    public static void buscarCliente() {
-        String option;
-        // boolean busquedaPorCod = askSearchByCode();
-        System.out.println("Ingrese el codigo o nombre del cliente: ");
-        option = scanner.nextLine();
-        Cliente cliente = null;
-        try {
-            int cod = Integer.parseInt(option);
-            cliente = gestor.buscarCliente(cod);
-        } catch (NumberFormatException e) {
-            cliente = gestor.buscarCliente(option);
-        } finally {
-            if (cliente != null) {
-                System.out.println(cliente);
-            } else {
-                System.out.println("No se encontro el cliente..");
-            }
-        }
-        System.out.println("Presione cualquier tecla para volver al menu...");
-        scanner.nextLine();
-    }
-
-    public static void showPedidos() {
-        Pedido[] pedidos = gestor.getPedidos();
-        if (pedidos.length <= 0) {
-            System.out.println("[UY!]. No hay pedidos");
-        }
-        for (int i = 0; i < pedidos.length; i++) {
-            Pedido pedido = pedidos[i];
-            Repartidor repartidor = gestor.getRepartidor(pedido.getCodigo());
-            if (repartidor == null) {
-                System.out.println("[" + i + "]. Pedido Cod. " + pedido.getCodigo() + ", " + "[Sin Asignar].");
-            } else {
-                System.out.println("[" + i + "]. Pedido Cod. " + pedido.getCodigo() + ", Costo: "
-                        + pedido.calcularCosto(repartidor.getVehiculo()) + "$, Tiempo estimado: "
-                        + repartidor.getVehiculo().calcularTiempoEntrega(pedido.getDistanciaKm()));
-            }
-        }
-    }
-
-    public static void asignarPedido() {
-        String option;
-        Repartidor repartidor = null;
-        Pedido pedido = null;
-        while (true) {
-            System.out.println("---[MENU ASIGNAR PEDIDO]---");
-            System.out.println("[1]. Repartidor: " + (repartidor != null ? repartidor.getNombre() : "Sin Repartidor"));
-            System.out.println("[2]. Pedido: " + (pedido != null ? "Destino: " + pedido.getDestino() : "Sin pedido"));
-            System.out.println("[3]. CANCELAR");
-            System.out.println("[4]. GUARDAR Y ASIGNAR PEDIDO A REPARTIDOR");
-            System.out.println("Seleccione el campo a modificar: ");
-            option = scanner.nextLine();
-            switch (option) {
-                case "1":
-                    repartidor = askRepartidor();
-                    break;
-                case "2":
-                    pedido = askPedido();
-                    break;
-                case "3":
-                    System.out.println("ASIGNACION DE PEDIDO CANCELADA");
-                    return;
-                case "4":
-                    if (repartidor == null || pedido == null) {
-                        System.out.println("[UY!]. Debe rellenar todo los campos.");
-                        break;
-                    }
-                    try {
-                        if (gestor.asignarPedido(pedido.getCodigo(), repartidor.getLegajo())) {
-                            System.out.println("PEDIDO ASIGNADO CON EXITO");
-                            return;
-                        } else {
-                            System.out.println("REPARTIDOR NO DISPONIBLE");
-                        }
-                    } catch (CapacidadExcedidaException e) {
-                        System.out.println("[UY!]. " + e.getMessage());
-                    }
-                    break;
-                default:
-                    System.out.println("[UY!] Debe ingresar una opcion valida del menu.");
-                    break;
-            }
-        }
-    }
-
-    public static Pedido askPedido() {
-        String option;
-        Pedido[] pedidos = gestor.getPedidosSinAsignar();
-        if (pedidos.length <= 0) {
-            System.out.println("[UY!]. No hay Pedidos!");
-            return null;
-        }
-        while (true) {
-            for (int i = 0; i < pedidos.length; i++) {
-                Pedido pedido = pedidos[i];
-                System.out.println("[" + i + "]. Destino: " + pedido.getDestino() + ", peso: " + pedido.getPesoKg());
-            }
-            option = scanner.nextLine();
-            try {
-                int i = Integer.parseInt(option);
-                if (i >= pedidos.length || i < 0) {
-                    System.out.println("[UY!]. Debe seleccionar el numero del cliente de la lista.");
-                } else {
-                    return pedidos[i];
-                }
-            } catch (NumberFormatException e) {
-                System.out.println("[UY!]. Debe ingresar un valor numerico de la lista.");
-            }
-        }
-    }
-
-    public static Repartidor askRepartidor() {
-        String option;
-        Repartidor[] repartidores = gestor.getRepartidorAvailable(); // should show only Repartidores available
-        if (repartidores.length <= 0) {
-            System.out.println("[UY!]. No hay repartidores disponibles!");
-            return null;
-        }
-        while (true) {
-            for (int i = 0; i < repartidores.length; i++) {
-                Repartidor repartidor = repartidores[i];
-                System.out.println("[" + i + "]. " + repartidor.getNombre());
-            }
-            System.out.println("Seleccione el cliente: ");
-            option = scanner.nextLine();
-            try {
-                int i = Integer.parseInt(option);
-                if (i >= repartidores.length || i < 0) {
-                    System.out.println("[UY!]. Debe seleccionar el numero del cliente de la lista.");
-                } else {
-                    return repartidores[i];
-                }
-            } catch (NumberFormatException e) {
-                System.out.println("[UY!]. Debe ingresar un valor numerico de la lista.");
-            }
-        }
-    }
-
-    public static void registrarPedido() throws AlmacenamientoLlenoException {
+    public static void registrarPedido() {
         String option, destino = "";
         double peso = 0, distancia = 0;
         Cliente cliente = null;
@@ -551,25 +627,26 @@ public class Main {
             option = scanner.nextLine();
             switch (option) {
                 case "1":
-                    cliente = askCliente();
+                    cliente = getClient();
                     break;
                 case "2":
-                    peso = askPeso();
+                    peso = menu.askPeso();
                     break;
                 case "3":
-                    distancia = askDistancia();
+                    distancia = menu.askDistancia();
                     break;
                 case "4":
-                    destino = askDestino();
+                    destino = menu.askDestino();
                     break;
                 case "5":
-                    tipo = askTipoPedido();
+                    tipo = menu.askTipoPedido();
                     break;
                 case "6":
                     System.out.println("CREACION DE PEDIDO CANCELADA");
                     return;
                 case "7":
-                    if (cliente == null || Validation.getDestinoStatus(destino) != "valid" || peso <= 0
+                    if (cliente == null || Validation.getDestinoStatus(destino) != ResultadoValidation.VALID
+                            || peso <= 0
                             || distancia <= 0) {
                         System.out.println("[UY!]. Debe rellenar todo los campos antes de guardar!");
                     } else {
@@ -599,301 +676,39 @@ public class Main {
         }
     }
 
-    public static TipoPedido askTipoPedido() {
+    public static void atenderPedido() {
         String option;
-        while (true) {
-            System.out.println("[1]. Pedido Norma;");
-            System.out.println("[2]. Pedido Fragil;");
-            System.out.println("[3]. Pedido Urgente;");
-            System.out.println("Ingrese el tipo de pedido: ");
-            option = scanner.nextLine();
+        Pedido pedidoSiguiente = gestor.getNextPedido();
+        if (!gestor.areTherePedidos()) {
+            System.out.println("No hay pedidos que atender! Presione Enter para volver.");
+            menu.waitEnter();
+        } else {
+            System.out.println("===[Siguiente Pedido]===");
+            System.out.println(pedidoSiguiente);
+            option = menu.askEstaSeguro().toLowerCase();
             switch (option) {
-                case "1":
-                    return TipoPedido.PEDIDO_NORMAL;
-                case "2":
-                    return TipoPedido.PEDIDO_FRAGIL;
-                case "3":
-                    return TipoPedido.PEDIDO_URGENTE;
-                default:
-                    System.out.println("[UY!] Debe ingresar una opcion valida del menu.");
+                case "s":
+                    ResultadoAtencion resultadoAtencion = gestor.atenderPedido();
+                    switch (resultadoAtencion.getEstado()) {
+                        case ATENDIDO:
+                            System.out.println("El pedido nro " + (resultadoAtencion.getPedido().getCodigo())
+                                    + " fue atendido y asignado a el repartidor legajo nro: "
+                                    + (resultadoAtencion.getRepartidor().getLegajo()));
+                            break;
+                        case SIN_REPARTIDOR_DESPONIBLE:
+                            System.out.println(
+                                    "[UY!]. No hay repartidores disponibles en este momento para el siguiente pedido a atender. Por favor, intentelo mas tarde.");
+                            break;
+                        default:
+
+                            break;
+                    }
                     break;
-            }
-        }
-    }
-
-    public static Cliente askCliente() {
-        String option;
-        Cliente[] clientes = gestor.getClientes();
-        System.out.println(clientes);
-        if (clientes.length <= 0) {
-            System.out.println("[UY!]. No hay clientes!");
-            return null;
-        }
-        while (true) {
-            for (int i = 0; i < clientes.length; i++) {
-                Cliente cliente = clientes[i];
-                System.out.println("[" + (i) + "]. " + cliente.getNombre());
-            }
-            System.out.println("Seleccione el codigo del cliente del Pedido: ");
-            option = scanner.nextLine();
-            try {
-                int i = Integer.parseInt(option);
-                if (i >= clientes.length || i < 0) {
-                    System.out.println("[UY!]. Debe seleccionar el numero del cliente de la lista.");
-                } else {
-                    Cliente cliente = clientes[i];
-                    return cliente;
-                }
-            } catch (NumberFormatException e) {
-                System.out.println("[UY!]. Debe ingresar un valor numerico de la lista.");
-            }
-        }
-    }
-
-    public static String askDestino() {
-        String option, status;
-        while (true) {
-            System.out.println("Ingrese el Destino del pedido:");
-            option = scanner.nextLine();
-            status = Validation.getDestinoStatus(option);
-            if (status == "empty") {
-                System.out.println("[UY!]. El destino del pedido no puede estar vacio.");
-            } else if (status == "too-long") {
-                System.out.println("[UY!]. El destino no puede superar los 100 caracteres de largo.");
-            } else {
-                return option;
-            }
-        }
-    }
-
-    public static double askDistancia() {
-        String option;
-        while (true) {
-            System.out.println("Ingrese la distancia del Pedido(KM): ");
-            option = scanner.nextLine();
-            try {
-                double distancia = Double.parseDouble(option);
-                if (!Double.isFinite(distancia) || distancia <= 0) {
-                    System.out.println("[UY!]. Debe ingresar un valor numerico positivo y valido");
-                } else {
-                    return distancia;
-                }
-            } catch (NumberFormatException e) {
-                System.out.println("[UY!]. Debe ingresar un valor valido.");
-            }
-        }
-    }
-
-    public static double askPeso() {
-        String option;
-        while (true) {
-            System.out.println("Ingrese el peso del Pedido(KG): ");
-            option = scanner.nextLine();
-            try {
-                double peso = Double.parseDouble(option);
-                if (!Double.isFinite(peso) || peso <= 0) {
-                    System.out.println("[UY!]. Debe ingresar un valor numerico positivo y valido.");
-                } else {
-                    return peso;
-                }
-            } catch (NumberFormatException e) {
-                System.out.println("[UY!]. Debe ingresar un valor valido.");
-            }
-        }
-    }
-
-    public static void registrarRepartidor() throws AlmacenamientoLlenoException {
-        Repartidor repartidor = new Repartidor();
-        String option;
-        while (true) {
-            System.out.println("---[MENU REPARTIDOR NUEVO]---");
-            System.out.println(
-                    "[1]. Nombre: " + (repartidor.getNombre() == null ? "Sin Nombre" : repartidor.getNombre()));
-            System.out.println(
-                    "[2]. Legajo: " + (repartidor.getLegajo() == null ? "Sin Legajo" : repartidor.getLegajo()));
-            System.out.println("[3]. Vehiculo: " + (repartidor.getVehiculo() == null ? "Sin vehiculo"
-                    : "Patente: " + repartidor.getVehiculo().getPatente()));
-            System.out.println("[4]. CANCELAR;");
-            System.out.println("[5]. GUARDAR");
-            System.out.println("Ingrese el campo a modificar:");
-            option = scanner.nextLine();
-            switch (option) {
-                case "1":
-                    repartidor.setNombre(askNombre());
-                    break;
-                case "2":
-                    repartidor.setLegajo(askLegajo());
-                    break;
-                case "3":
-                    repartidor.setVehiculo(registrarVehiculo());
-                    break;
-                case "4":
-                    System.out.println("REPARTIDOR CANCELADO");
+                case "n":
+                    System.out.println("Volviendo...");
                     return;
-                case "5":
-                    if (Validation.getNombreStatus(repartidor.getNombre()) != "valid"
-                            || Validation.getLegajoStatus(repartidor.getLegajo()) != "valid"
-                            || repartidor.getVehiculo() == null) {
-                        System.out.println("[UY!]. Debe rellenar todo los campos antes de guardar!");
-                    } else {
-                        gestor.addNewRepartidor(repartidor);
-                        System.out.println("NUEVO REPARTIDOR AGREGADO CON EXITO!");
-                        return;
-                    }
-                    break;
                 default:
                     System.out.println("[UY!] Debe ingresar una opcion valida del menu.");
-                    break;
-            }
-        }
-    }
-
-    public static Vehiculo registrarVehiculo() {
-        String patente = "", option;
-        TipoVehiculo tipo = TipoVehiculo.CAMIONETA;
-        double capacidad = 0, velocidad = 0;
-        BigDecimal costoPorKm = BigDecimal.ZERO;
-        while (true) {
-            System.out.println("---[MENU VEHICULO DE REPARTIDOR]---");
-            System.out.println("[1]. Tipo de vehiculo: " + tipo); // make this a little prettier
-            System.out.println("[2]. Patente: " + patente);
-            System.out.println("[3]. Capacidad(kg): " + capacidad);
-            System.out.println("[4]. Velocidad(km/h): " + velocidad);
-            System.out.println("[5]. Costo por Kilometro: " + costoPorKm);
-            System.out.println("[6]. CANCELAR;");
-            System.out.println("[7]. GUARDAR;");
-            System.out.println("Ingrese el campo a modificar:");
-            option = scanner.nextLine();
-
-            switch (option) {
-                case "1":
-                    tipo = askTipoVehiculo();
-                    break;
-                case "2":
-                    patente = askPatente();
-                    break;
-                case "3":
-                    capacidad = askCapacidad();
-                    break;
-                case "4":
-                    velocidad = askVelocidad();
-                    break;
-                case "5":
-                    costoPorKm = askCostoPorKm();
-                    break;
-                case "6":
-                    System.out.println("CREACION DE REPARTIDOR CANCELADA");
-                    return null;
-                case "7":
-                    if (Validation.getPatenteStatus(patente) != "valid" || capacidad <= 0 || velocidad <= 0
-                            || costoPorKm.compareTo(BigDecimal.ZERO) <= 0) {
-                        System.out.println("[UY!]. Debe rellenar todo los campos antes de guardar!");
-                    } else {
-                        switch (tipo) {
-                            case CAMIONETA:
-                                return new Camioneta(patente, capacidad, velocidad, costoPorKm);
-                            case MOTO:
-                                return new Moto(patente, capacidad, velocidad, costoPorKm);
-                            case BICICLETA:
-                                return new Bicicleta(patente, capacidad, velocidad, costoPorKm);
-                        }
-                    }
-                    break;
-                default:
-                    System.out.println("[UY!] Debe ingresar una opcion valida del menu.");
-                    break;
-            }
-
-        }
-    }
-
-    public static BigDecimal askCostoPorKm() {
-        String option;
-        while (true) {
-            System.out.println("Ingrese el costo por kilometro del vehiculo:");
-            option = scanner.nextLine();
-            try {
-                BigDecimal costo = new BigDecimal(option);
-                if (costo.compareTo(BigDecimal.ZERO) <= 0) {
-                    System.out.println("[UY!]. Debe ingresar un valor numerico positivo y valido");
-                } else {
-                    return costo;
-                }
-            } catch (NumberFormatException e) {
-                System.out.println("[UY!]. Debe ingresar un valor valido.");
-            }
-        }
-    }
-
-    public static double askVelocidad() {
-        String option;
-        while (true) {
-            System.out.println("Ingrese la velocidad promedio del vehiculo(Km/h): ");
-            option = scanner.nextLine();
-            try {
-                Double velocidad = Double.parseDouble(option);
-                if (!Double.isFinite(velocidad) || velocidad <= 0) {
-                    System.out.println("[UY!]. Debe ingresar un valor numerico positivo y valido.");
-                } else {
-                    return velocidad;
-                }
-            } catch (NumberFormatException e) {
-                System.out.println("[UY!]. Debe ingresar un valor numerico valido.");
-            }
-        }
-    }
-
-    public static double askCapacidad() {
-        String option;
-        while (true) {
-            System.out.println("Ingrese la capacidad de carga del vehiculo(en Kg):");
-            option = scanner.nextLine();
-            try {
-                Double capacidad = Double.parseDouble(option);
-                if (!Double.isFinite(capacidad) || capacidad <= 0) {
-                    System.out.println("[UY!]. Debe ingresar un valor numerico positivo y valido.");
-                } else {
-                    return capacidad;
-                }
-            } catch (NumberFormatException e) {
-                System.out.println("[UY!]. Debe ingresar un valor numerico valido.");
-            }
-        }
-    }
-
-    public static String askPatente() {
-        String patente, status;
-        while (true) {
-            System.out.println("Ingrese la patente del vehiculo:");
-            patente = scanner.nextLine();
-            status = Validation.getPatenteStatus(patente);
-            if (status == "empty") {
-                System.out.println("[UY!]. La patente del vehiculo no puede estar vacia.");
-            } else if (status == "too-long") {
-                System.out.println("[UY!]. La patente del vehiculo no puede superar los 10 caracteres de largo.");
-            } else {
-                return patente;
-            }
-        }
-    }
-
-    public static TipoVehiculo askTipoVehiculo() {
-        String option;
-        while (true) {
-            System.out.println("[1]. Camioneta;");
-            System.out.println("[2]. Moto;");
-            System.out.println("[3]. Bicicleta;");
-            System.out.println("Ingrese el tipo de vehiculo: ");
-            option = scanner.nextLine();
-            switch (option) {
-                case "1":
-                    return TipoVehiculo.CAMIONETA;
-                case "2":
-                    return TipoVehiculo.MOTO;
-                case "3":
-                    return TipoVehiculo.BICICLETA;
-                default:
-                    System.out.println("[UY!]. Debe ingresar un tipo de vehiculo valido.");
                     break;
             }
         }
